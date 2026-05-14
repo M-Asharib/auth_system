@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.security import ALGORITHM
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.token import TokenPayload
