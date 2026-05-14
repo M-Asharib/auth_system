@@ -66,3 +66,58 @@ async def login(
         "refresh_token": create_refresh_token(user.id),
         "token_type": "bearer",
     }
+
+@router.post("/refresh", response_model=TokenExchangeResponse)
+async def refresh_token(
+    refresh_token: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Rotate tokens using a valid refresh token.
+    """
+    try:
+        payload = jwt.decode(
+            refresh_token, settings.SECRET_KEY_REFRESH, algorithms=[settings.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+        if token_data.type != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+    except (jwt.PyJWTError, ValidationError):
+        raise HTTPException(status_code=401, detail="Could not validate refresh token")
+    
+    result = await db.execute(select(User).where(User.id == int(token_data.sub)))
+    user = result.scalars().first()
+    
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    return {
+        "access_token": create_access_token(user.id),
+        "refresh_token": create_refresh_token(user.id),
+        "token_type": "bearer",
+    }
+
+@router.post("/logout", response_model=StandardActionResponse)
+async def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(reusable_oauth2)
+):
+    """
+    Revoke the current access token using Redis blacklisting.
+    """
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY_ACCESS, algorithms=[settings.ALGORITHM]
+        )
+        exp = payload.get("exp")
+        now = datetime.now(timezone.utc).timestamp()
+        ttl = int(exp - now)
+        
+        if ttl > 0:
+            await redis_service.blacklist_token(token, ttl)
+            
+    except jwt.PyJWTError:
+        pass # Token already invalid
+        
+    return {"detail": "Revocation complete"}
+

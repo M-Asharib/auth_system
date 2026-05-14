@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users Management - Enterprise Core Auth</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .table-container {
+            margin-top: 2rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        th {
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: transform 0.2s;
+        }
+
+        .back-link:hover {
+            transform: translateX(-5px);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>User Directory</h1>
+        <p class="subtitle">Administrative overview of all registered identities</p>
+    </header>
+
+    <main>
+        <a href="index.html" class="back-link">← Back to Dashboard</a>
+        
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">👥</span>
+                System Users
+                <span id="user-count" class="status-badge active" style="margin-left: auto;">Loading...</span>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email Address</th>
+                            <th>Status</th>
+                            <th>Privileges</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        <!-- Users will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const accessToken = localStorage.getItem('access_token');
+
+        if (!accessToken) {
+            window.location.href = 'login.html';
+        }
+
+        async function fetchUsers() {
+            try {
+                const res = await fetch(`${API_URL}/users/`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (res.status === 403) {
+                    alert('Access Denied: You do not have superuser privileges.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const users = await res.json();
+                if (res.ok) {
+                    renderUsers(users);
+                } else {
+                    alert(`Error: ${users.detail}`);
+                }
+            } catch (err) {
+                alert(`Network Error: ${err.message}`);
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('user-table-body');
+            const countBadge = document.getElementById('user-count');
+            
+            countBadge.innerText = `${users.length} Total`;
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td style="font-weight: 500;">${user.email}</td>
+                    <td>
+                        <span class="status-badge ${user.is_active ? 'active' : 'inactive'}">
+                            ${user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${user.is_superuser ? 'warning' : 'info'}" style="${!user.is_superuser ? 'background: rgba(0, 122, 255, 0.1); color: #007AFF;' : ''}">
+                            ${user.is_superuser ? 'Superuser' : 'Standard'}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-dim); font-size: 0.85rem;">
+                        ${new Date(user.created_at).toLocaleDateString()} ${new Date(user.created_at).toLocaleTimeString()}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        fetchUsers();
+    </script>
+</body>
+</html>
