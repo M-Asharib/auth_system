@@ -6,6 +6,7 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserRegistrationResponse
+from app.schemas.msg import StandardActionResponse
 
 router = APIRouter()
 
@@ -55,3 +56,22 @@ async def update_user_policy(
     await db.commit()
     await db.refresh(user)
     return user
+
+@router.post("/policy/bulk", response_model=StandardActionResponse)
+async def bulk_update_user_policy(
+    expires_minutes: int = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update token expiry policy for ALL users. (Admin Only)
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+    
+    from sqlalchemy import update
+    await db.execute(
+        update(User).values(access_token_expires_minutes=expires_minutes)
+    )
+    await db.commit()
+    return {"detail": f"Global policy enforced: {expires_minutes}m for all accounts."}

@@ -66,8 +66,8 @@
                             <span class="status-badge active">15 Minutes</span>
                         </div>
                         <div class="status-item">
-                            <label>Policy Scope</label>
-                            <span class="status-badge info">Global + User Overrides</span>
+                            <label>Session Remaining</label>
+                            <span class="status-badge info"><span id="session-expiry-timer">Calculating...</span></span>
                         </div>
                         <div class="status-item">
                             <label>Compliance</label>
@@ -103,6 +103,7 @@
                                     <th>Status</th>
                                     <th>Access Level</th>
                                     <th>TTL Policy (Min)</th>
+                                    <th>Session Remaining</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -218,6 +219,11 @@
                                style="width: 70px; padding: 0.4rem; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--primary); font-family: monospace;">
                     </td>
                     <td>
+                        <span id="user-timer-${user.id}" class="status-badge ${user.last_login_at ? 'info' : 'inactive'}" style="min-width: 80px; text-align: center;">
+                            ${user.last_login_at ? 'Calculating...' : 'Offline'}
+                        </span>
+                    </td>
+                    <td>
                         <button class="secondary" onclick="updateUserPolicy(${user.id})" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 8px;">
                             Apply
                         </button>
@@ -225,6 +231,36 @@
                 `;
                 tbody.appendChild(tr);
             });
+            startGlobalUserTimers(users);
+        }
+
+        function startGlobalUserTimers(users) {
+            // Clear existing interval if any
+            if (window.userTimerInterval) clearInterval(window.userTimerInterval);
+
+            window.userTimerInterval = setInterval(() => {
+                users.forEach(user => {
+                    const timerEl = document.getElementById(`user-timer-${user.id}`);
+                    if (!timerEl || !user.last_login_at) return;
+
+                    const lastLogin = new Date(user.last_login_at).getTime();
+                    const policyMinutes = user.access_token_expires_minutes || 15;
+                    const expiry = lastLogin + (policyMinutes * 60 * 1000);
+                    
+                    const now = new Date().getTime();
+                    const distance = expiry - now;
+
+                    if (distance < 0) {
+                        timerEl.innerText = 'Expired';
+                        timerEl.className = 'status-badge inactive';
+                    } else {
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                        timerEl.innerText = `${minutes}m ${seconds}s`;
+                        timerEl.className = distance < 60000 ? 'status-badge warning' : 'status-badge info';
+                    }
+                });
+            }, 1000);
         }
 
         async function updateUserPolicy(userId) {
@@ -258,33 +294,66 @@
             if (!confirm(`Are you sure you want to enforce a ${expiresMinutes} minute session limit for ALL users?`)) return;
 
             try {
-                // We fetch all users first
-                const res = await fetch(`${API_URL}/users/`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+                const res = await fetch(`${API_URL}/users/policy/bulk`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ expires_minutes: parseInt(expiresMinutes) })
                 });
-                const users = await res.json();
-                
-                let successCount = 0;
-                for (const user of users) {
-                    const updateRes = await fetch(`${API_URL}/users/${user.id}/policy`, {
-                        method: 'PATCH',
-                        headers: { 
-                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ expires_minutes: parseInt(expiresMinutes) })
-                    });
-                    if (updateRes.ok) successCount++;
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(data.detail);
+                    fetchUsers();
+                } else {
+                    const err = await res.json();
+                    alert(`Global Update Failed: ${err.detail}`);
                 }
-                
-                alert(`Global Policy Enforced: ${successCount} users updated.`);
-                fetchUsers();
             } catch (err) {
                 alert(`Network Error during global update: ${err.message}`);
             }
         }
 
+        function updateCountdown() {
+            const token = localStorage.getItem('access_token');
+            const countdownEl = document.getElementById('session-expiry-timer');
+            if (!token) return;
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const expiry = payload.exp * 1000;
+                
+                const timer = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = expiry - now;
+                    
+                    if (distance < 0) {
+                        clearInterval(timer);
+                        countdownEl.innerText = 'Refreshing...';
+                        return;
+                    }
+
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    
+                    countdownEl.innerText = `${minutes}m ${seconds}s`;
+                    
+                    // Visual warning if under 1 minute
+                    if (minutes < 1) {
+                        countdownEl.parentElement.className = 'status-badge warning';
+                    } else {
+                        countdownEl.parentElement.className = 'status-badge info';
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error('Failed to decode token for countdown');
+            }
+        }
+
         fetchUsers();
+        updateCountdown();
     </script>
 </body>
 </html>

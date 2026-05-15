@@ -8,6 +8,12 @@ from app.services.redis_service import redis_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: Sync Database Schema (Development Mode)
+    from app.models.user import Base
+    from app.db.session import engine
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
     # Startup: Connect to Redis
     await redis_service.connect()
     yield

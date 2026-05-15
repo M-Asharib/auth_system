@@ -14,4 +14,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
     access_token_expires_minutes = Column(Integer, nullable=True) # User-wise override
+    last_login_at = Column(DateTime(timezone=True), nullable=True) # For real-time monitoring
     created_at = Column(DateTime(timezone=True), server_default=func.now())
