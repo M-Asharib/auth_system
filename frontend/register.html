@@ -41,7 +41,7 @@
     </main>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        const API_URL = ''; // Use relative path since frontend is served by FastAPI
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;

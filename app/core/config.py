@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     def get_database_url(self) -> str:
         if self.DATABASE_URL:
             return self.DATABASE_URL
+        # Default to SQLite for easy development if Postgres info is incomplete
+        if not self.POSTGRES_USER or not self.POSTGRES_PASSWORD:
+            return "sqlite+aiosqlite:///./sql_app.db"
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
