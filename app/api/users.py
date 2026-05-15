@@ -30,6 +30,9 @@ async def read_users(
         users = result.scalars().all()
         print(f"DEBUG: Found {len(users)} users in database.")
         return users
+    except Exception as e:
+        print(f"DEBUG: Error fetching users from DB: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 @router.patch("/{user_id}/policy", response_model=UserRegistrationResponse)
 async def update_user_policy(
     user_id: int,
