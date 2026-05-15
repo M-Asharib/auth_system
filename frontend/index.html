@@ -33,21 +33,21 @@
                         <span class="icon">⚡</span>
                         Active Session
                     </div>
-                    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="session-header">
                         <span>Session Status:</span>
                         <span id="session-status" class="status-badge active">Validated</span>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="button-grid">
                         <button class="secondary" onclick="fetchProfile()">Fetch Profile</button>
                         <button class="secondary" onclick="rotateToken()">Rotate Token</button>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                        <button class="secondary" onclick="logout()" style="color: var(--error); border-color: var(--error);">Revoke Session</button>
-                        <button class="secondary" onclick="window.location.href='users.html'" style="color: var(--primary);">Users Directory</button>
+                    <div class="button-grid" style="margin-top: 1rem;">
+                        <button class="secondary btn-revoke" onclick="logout()">Revoke Session</button>
+                        <button class="secondary btn-users" onclick="window.location.href='users.html'">Users Directory</button>
                     </div>
-                    <button class="secondary" onclick="testInvalid()" style="color: var(--warning); margin-top: 1rem; width: 100%;">Test Zero-Trust</button>
+                    <button class="secondary btn-test" onclick="testInvalid()">Test Zero-Trust</button>
                     
                     <div class="token-display" id="access-token-view">Access Token: Loaded</div>
                     <div class="token-display" id="refresh-token-view">Refresh Token: Loaded</div>
@@ -56,13 +56,13 @@
         </section>
 
         <section class="right-panel">
-            <div class="card" style="height: 100%;">
+            <div class="card card-log">
                 <div class="card-title">
                     <span class="icon" style="background: #000;">💻</span>
                     Verification Log
                 </div>
                 <div id="log-container"></div>
-                <button class="secondary" onclick="clearLogs()" style="margin-top: 1.5rem; width: auto; font-size: 0.8rem;">Clear Terminal</button>
+                <button class="secondary btn-clear" onclick="clearLogs()">Clear Terminal</button>
             </div>
         </section>
     </main>
