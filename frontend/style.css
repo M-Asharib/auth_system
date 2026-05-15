@@ -176,3 +176,134 @@ button.secondary {
 .footer-link a:hover {
     text-decoration: underline;
 }
+
+/* --- Responsive Design --- */
+
+@media (max-width: 1024px) {
+    h1 {
+        font-size: 2.8rem;
+    }
+    
+    main {
+        padding: 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 3rem 1.5rem 1.5rem;
+    }
+
+    h1 {
+        font-size: 2.2rem;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .card {
+        padding: 1.5rem;
+        border-radius: 24px;
+    }
+
+    .card-title {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Stack buttons on small screens */
+    .button-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Handle long tokens */
+    .token-display {
+        font-size: 0.75rem;
+        padding: 0.75rem;
+        word-break: break-all;
+    }
+
+    #log-container {
+        max-height: 300px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    main {
+        padding: 1.5rem 1rem;
+    }
+
+    .card {
+        padding: 1.25rem;
+    }
+
+    input, button {
+        padding: 0.85rem;
+        font-size: 0.95rem;
+    }
+}
+
+/* Utilities */
+.button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.token-display {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    word-break: break-all;
+    border: 1px solid var(--glass-border);
+}
+
+.status-badge {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--success);
+}
+
+.status-badge.inactive {
+    background: rgba(255, 59, 48, 0.15);
+    color: var(--error);
+}
+
+#log-container {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    padding: 1rem;
+    height: 400px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    border: 1px solid var(--glass-border);
+}
+
+.log-entry {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.log-time { color: var(--text-dim); margin-right: 0.5rem; }
+.log-type-info { color: var(--text); }
+.log-type-success { color: var(--success); }
+.log-type-warn { color: var(--warning); }
+.log-type-error { color: var(--error); }
+

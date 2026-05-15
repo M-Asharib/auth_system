@@ -48,40 +48,67 @@ A high-performance, non-blocking asynchronous security and user routing engine b
 
 ---
 
-## 🚦 Getting Started
+## 🚦 Quick Start Guide
 
 ### 1. Prerequisites
-- Python 3.11+
-- PostgreSQL
-- Redis
+Ensure you have the following installed:
+- **Python 3.11+**
+- **Redis Server** (Required for token blacklisting)
+- **PostgreSQL** (Optional, defaults to SQLite for local development)
 
 ### 2. Installation
+Clone the repository and install dependencies using a virtual environment:
+
 ```bash
-# Clone the repository and navigate to the directory
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Configuration
-Configure your secrets and database URLs in the `.env` file. The system requires two unique secrets:
-- `SECRET_KEY_ACCESS`: For access tokens.
-- `SECRET_KEY_REFRESH`: For refresh tokens.
+### 3. Environment Configuration
+Copy the example environment file and update it with your secrets:
 
-### 4. Execution
 ```bash
-# Start the asynchronous server
+cp .env.example .env
+```
+*Note: Make sure to generate strong secrets for `SECRET_KEY_ACCESS` and `SECRET_KEY_REFRESH`. You can use `openssl rand -hex 32` for this.*
+
+### 4. Running the System
+Start the FastAPI server with Uvicorn:
+
+```bash
 uvicorn app.main:app --reload
 ```
+
+### 5. Accessing the Application
+Once the server is running, you can access the various components:
+- **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Validation Client (Frontend)**: [http://localhost:8000/static/index.html](http://localhost:8000/static/index.html)
+- **Root API Endpoint**: [http://localhost:8000/](http://localhost:8000/)
+
 
 ---
 
 ## 🧪 Testing & Verification
 
 ### Interactive Documentation
+Explore the API endpoints directly through the browser:
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Redoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-### Validation Client
-Open `frontend/index.html` in your browser to access the **Premium Dashboard**. This allows you to visually test the full registration, login, rotation, and revocation lifecycle.
+### Validation Client (Frontend)
+The system serves a premium glassmorphism-inspired UI at [http://localhost:8000/static/index.html](http://localhost:8000/static/index.html). Use this to visually test:
+- User Registration & Password Hashing
+- Secure Login & Dual-Token Issuance
+- Automatic Token Rotation
+- Stateful Logout (Redis Blacklisting)
+
 
 ### Automated Suites
 ```bash
