@@ -35,9 +35,16 @@ def create_token(
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def create_access_token(subject: Union[str, Any]) -> str:
-    """Generate a short-lived access token."""
-    expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+def create_access_token(
+    subject: Union[str, Any], 
+    expires_delta: Optional[timedelta] = None
+) -> str:
+    """Generate a short-lived access token with optional custom expiry."""
+    if expires_delta:
+        expires = expires_delta
+    else:
+        expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        
     return create_token(
         subject=subject,
         expires_delta=expires,

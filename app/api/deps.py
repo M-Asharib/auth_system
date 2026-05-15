@@ -20,44 +20,40 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db), 
     token: str = Depends(reusable_oauth2)
 ) -> User:
-    """
-    Zero-Trust Dependency: Validates JWT and checks Redis blacklist.
-    """
     try:
+        print(f"DEBUG: Validating token...")
         payload = jwt.decode(
             token, settings.SECRET_KEY_ACCESS, algorithms=[settings.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
         
-        # v1.4.2 Requirement: Explicit structural attribute check
         if token_data.type != "access":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type for this operation",
+                detail="Invalid token type",
             )
             
-        # Zero-Trust: Check Redis Blacklist
-        # We use 'sub' as the JTI or just the whole token as a key if JTI isn't used.
-        # However, the spec mentions "token fingerprint". I'll use the whole token or its hash.
-        # For simplicity and exactness, I'll use the JTI if available, else the token itself.
+        print(f"DEBUG: Checking Redis blacklist for token...")
         if await redis_service.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
+                detail="Token revoked",
             )
 
-    except (jwt.PyJWTError, ValidationError):
+    except Exception as e:
+        print(f"DEBUG: Token validation failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {str(e)}",
         )
     
+    print(f"DEBUG: Fetching user {token_data.sub} from DB...")
     result = await db.execute(select(User).where(User.id == int(token_data.sub)))
     user = result.scalars().first()
     
     if not user:
+        print(f"DEBUG: User {token_data.sub} not found in DB.")
         raise HTTPException(status_code=404, detail="User not found")
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-        
+    
+    print(f"DEBUG: User {user.email} authenticated successfully.")
     return user

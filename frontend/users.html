@@ -8,127 +8,186 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        .table-container {
-            margin-top: 2rem;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
-        }
-
-        th {
-            text-align: left;
-            padding: 1.25rem 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        td {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--glass-border);
-            font-size: 0.95rem;
-            color: var(--text);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            margin-bottom: 2rem;
-            transition: transform 0.2s;
-        }
-
-        .back-link:hover {
-            transform: translateX(-5px);
-        }
-    </style>
 </head>
+
 <body>
-    <header>
-        <h1>User Directory</h1>
-        <p class="subtitle">Administrative overview of all registered identities</p>
-    </header>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="icon">🛡️</span>
+                <span>Core Auth</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="users.html" class="nav-item active">
+                    <span class="icon">👥</span>
+                    <span>Identities</span>
+                </a>
+                <a href="#" class="nav-item" onclick="localStorage.removeItem('access_token'); window.location.href='login.html';">
+                    <span class="icon">🚫</span>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
 
-    <main>
-        <a href="index.html" class="back-link">← Back to Dashboard</a>
+        <div class="main-content">
+            <header>
+                <h1>User Directory</h1>
+                <p class="subtitle">Administrative overview of all registered identities</p>
+            </header>
+
+            <main style="display: block;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <a href="index.html" class="back-link" style="margin-bottom: 0;">
+                        <span>←</span> Back to Dashboard
+                    </a>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="secondary" onclick="rotateToken()" style="width: auto; padding: 0.6rem 1.25rem; font-size: 0.85rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; color: var(--warning); border-color: var(--warning) !important;">
+                            <span>🔄</span> Rotate My Access
+                        </button>
+                        <button class="secondary" onclick="fetchUsers()" style="width: auto; padding: 0.6rem 1.25rem; font-size: 0.85rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>👥</span> Refresh Directory
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Token Lifecycle Management Card -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-title">
+                        <span class="icon">🛡️</span>
+                        Token Expiry Policy Management
+                    </div>
+                    <div class="status-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
+                        <div class="status-item">
+                            <label>Default Policy</label>
+                            <span class="status-badge active">15 Minutes</span>
+                        </div>
+                        <div class="status-item">
+                            <label>Policy Scope</label>
+                            <span class="status-badge info">Global + User Overrides</span>
+                        </div>
+                        <div class="status-item">
+                            <label>Compliance</label>
+                            <span class="status-badge warning">v1.4.2 Standard</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-section" style="margin-bottom: 0; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <label>Global Policy Update (Apply to All)</label>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <input type="number" id="global-expiry" placeholder="15" style="width: 100px; padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white;">
+                            <span style="font-size: 0.85rem; color: var(--text-dim);">Minutes</span>
+                            <button class="secondary" onclick="applyGlobalPolicy()" style="width: auto; padding: 0.6rem 1.25rem; font-size: 0.85rem; border-radius: 12px; margin-left: auto;">
+                                <span>⚖️</span> Enforce Global Policy
+                            </button>
+                        </div>
+                    </div>
+                </div>
         
-        <div class="card">
-            <div class="card-title">
-                <span class="icon">👥</span>
-                System Users
-                <span id="user-count" class="status-badge active" style="margin-left: auto;">Loading...</span>
-            </div>
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon">👥</span>
+                        Identity Repository
+                        <span id="user-count" class="status-badge info" style="margin-left: auto;">Loading Users...</span>
+                    </div>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Email Address</th>
-                            <th>Status</th>
-                            <th>Privileges</th>
-                            <th>Registration Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-table-body">
-                        <!-- Users will be injected here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>UID</th>
+                                    <th>Identity / Email</th>
+                                    <th>Status</th>
+                                    <th>Access Level</th>
+                                    <th>TTL Policy (Min)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body">
+                                <!-- Users will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
     </main>
+</div>
+</div>
 
     <script>
-        const API_URL = '';
+        const API_URL = window.location.origin;
         const accessToken = localStorage.getItem('access_token');
 
         if (!accessToken) {
             window.location.href = 'login.html';
         }
 
-        async function fetchUsers() {
+        async function fetchUsers(isRetry = false) {
+            console.log('Initiating User Directory Fetch...');
             try {
                 const res = await fetch(`${API_URL}/users/`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
                 });
                 
+                console.log('Response Status:', res.status);
+                
+                if (res.status === 401 && !isRetry) {
+                    console.warn('Access Token expired. Attempting silent rotation...');
+                    const success = await rotateToken(true);
+                    if (success) return fetchUsers(true);
+                }
+
                 if (res.status === 403) {
-                    alert('Access Denied: You do not have superuser privileges.');
+                    alert('Access Denied: Administrative Privileges Required.');
                     window.location.href = 'index.html';
                     return;
                 }
 
                 const users = await res.json();
                 if (res.ok) {
+                    console.log('Fetch Success:', users.length, 'identities retrieved.');
                     renderUsers(users);
                 } else {
+                    console.error('Fetch Error Detail:', users.detail);
                     alert(`Error: ${users.detail}`);
                 }
             } catch (err) {
+                console.error('Network Error:', err);
                 alert(`Network Error: ${err.message}`);
+            }
+        }
+
+        async function rotateToken(silent = false) {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) {
+                if (!silent) alert('No refresh token available. Please login again.');
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                    if (!silent) alert('Tokens rotated successfully! Session extended.');
+                    return true;
+                } else {
+                    if (!silent) alert(`Rotation Failed: ${data.detail}`);
+                    window.location.href = 'login.html';
+                    return false;
+                }
+            } catch (err) {
+                if (!silent) alert(`Network Error during rotation: ${err.message}`);
+                return false;
             }
         }
 
@@ -136,30 +195,93 @@
             const tbody = document.getElementById('user-table-body');
             const countBadge = document.getElementById('user-count');
             
-            countBadge.innerText = `${users.length} Total`;
+            countBadge.innerText = `${users.length} Total Identities`;
             tbody.innerHTML = '';
 
             users.forEach(user => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${user.id}</td>
+                    <td><code style="font-size: 0.75rem; color: var(--text-dim);">#${user.id}</code></td>
                     <td style="font-weight: 500;">${user.email}</td>
                     <td>
                         <span class="status-badge ${user.is_active ? 'active' : 'inactive'}">
-                            ${user.is_active ? 'Active' : 'Inactive'}
+                            ${user.is_active ? 'Active' : 'Disabled'}
                         </span>
                     </td>
                     <td>
-                        <span class="status-badge ${user.is_superuser ? 'warning' : 'info'}" style="${!user.is_superuser ? 'background: rgba(0, 122, 255, 0.1); color: #007AFF;' : ''}">
+                        <span class="status-badge ${user.is_superuser ? 'warning' : 'info'}">
                             ${user.is_superuser ? 'Superuser' : 'Standard'}
                         </span>
                     </td>
-                    <td style="color: var(--text-dim); font-size: 0.85rem;">
-                        ${new Date(user.created_at).toLocaleDateString()} ${new Date(user.created_at).toLocaleTimeString()}
+                    <td>
+                        <input type="number" id="expiry-${user.id}" value="${user.access_token_expires_minutes || 15}" 
+                               style="width: 70px; padding: 0.4rem; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--primary); font-family: monospace;">
+                    </td>
+                    <td>
+                        <button class="secondary" onclick="updateUserPolicy(${user.id})" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 8px;">
+                            Apply
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        async function updateUserPolicy(userId) {
+            const expiresMinutes = document.getElementById(`expiry-${userId}`).value;
+            try {
+                const res = await fetch(`${API_URL}/users/${userId}/policy`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ expires_minutes: parseInt(expiresMinutes) })
+                });
+
+                if (res.ok) {
+                    alert('User security policy updated successfully.');
+                    fetchUsers();
+                } else {
+                    const err = await res.json();
+                    alert(`Update Failed: ${err.detail}`);
+                }
+            } catch (err) {
+                alert(`Network Error: ${err.message}`);
+            }
+        }
+
+        async function applyGlobalPolicy() {
+            const expiresMinutes = document.getElementById('global-expiry').value;
+            if (!expiresMinutes) return alert('Please enter a duration in minutes.');
+            
+            if (!confirm(`Are you sure you want to enforce a ${expiresMinutes} minute session limit for ALL users?`)) return;
+
+            try {
+                // We fetch all users first
+                const res = await fetch(`${API_URL}/users/`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+                });
+                const users = await res.json();
+                
+                let successCount = 0;
+                for (const user of users) {
+                    const updateRes = await fetch(`${API_URL}/users/${user.id}/policy`, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ expires_minutes: parseInt(expiresMinutes) })
+                    });
+                    if (updateRes.ok) successCount++;
+                }
+                
+                alert(`Global Policy Enforced: ${successCount} users updated.`);
+                fetchUsers();
+            } catch (err) {
+                alert(`Network Error during global update: ${err.message}`);
+            }
         }
 
         fetchUsers();

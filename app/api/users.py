@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.api.deps import get_current_user
@@ -24,10 +24,31 @@ async def read_users(
     """
     Retrieve all users. (Admin Only)
     """
+    print(f"DEBUG: Admin {current_user.email} is fetching user list...")
+    try:
+        result = await db.execute(select(User))
+        users = result.scalars().all()
+        print(f"DEBUG: Found {len(users)} users in database.")
+        return users
+@router.patch("/{user_id}/policy", response_model=UserRegistrationResponse)
+async def update_user_policy(
+    user_id: int,
+    expires_minutes: int = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update token expiry policy for a specific user. (Admin Only)
+    """
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
-        )
-    result = await db.execute(select(User))
-    return result.scalars().all()
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+    
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.access_token_expires_minutes = expires_minutes
+    await db.commit()
+    await db.refresh(user)
+    return user

@@ -61,8 +61,14 @@ async def login(
             detail="Inactive user",
         )
 
+    # Create tokens with potential user-wise expiry override
+    expires_delta = None
+    if user.access_token_expires_minutes:
+        from datetime import timedelta
+        expires_delta = timedelta(minutes=user.access_token_expires_minutes)
+
     return {
-        "access_token": create_access_token(user.id),
+        "access_token": create_access_token(user.id, expires_delta=expires_delta),
         "refresh_token": create_refresh_token(user.id),
         "token_type": "bearer",
     }
@@ -91,8 +97,14 @@ async def refresh_token(
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
+    # Check for user-wise expiry override
+    expires_delta = None
+    if user.access_token_expires_minutes:
+        from datetime import timedelta
+        expires_delta = timedelta(minutes=user.access_token_expires_minutes)
+
     return {
-        "access_token": create_access_token(user.id),
+        "access_token": create_access_token(user.id, expires_delta=expires_delta),
         "refresh_token": create_refresh_token(user.id),
         "token_type": "bearer",
     }

@@ -8,67 +8,132 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        main {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 3rem;
-        }
-        @media (max-width: 1000px) {
-            main { grid-template-columns: 1fr; }
-        }
-    </style>
 </head>
+
 <body>
-    <header>
-        <h1>System Dashboard</h1>
-        <p class="subtitle">v1.4.2-Prod Security Control Hub</p>
-    </header>
-
-    <main>
-        <section class="left-panel">
-            <div class="card">
-                <div id="session-info">
-                    <div class="card-title">
-                        <span class="icon">⚡</span>
-                        Active Session
-                    </div>
-                    <div class="session-header">
-                        <span>Session Status:</span>
-                        <span id="session-status" class="status-badge active">Validated</span>
-                    </div>
-                    
-                    <div class="button-grid">
-                        <button class="secondary" onclick="fetchProfile()">Fetch Profile</button>
-                        <button class="secondary" onclick="rotateToken()">Rotate Token</button>
-                    </div>
-                    
-                    <div class="button-grid" style="margin-top: 1rem;">
-                        <button class="secondary btn-revoke" onclick="logout()">Revoke Session</button>
-                        <button class="secondary btn-users" onclick="window.location.href='users.html'">Users Directory</button>
-                    </div>
-                    <button class="secondary btn-test" onclick="testInvalid()">Test Zero-Trust</button>
-                    
-                    <div class="token-display" id="access-token-view">Access Token: Loaded</div>
-                    <div class="token-display" id="refresh-token-view">Refresh Token: Loaded</div>
-                </div>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="icon">🛡️</span>
+                <span>Core Auth</span>
             </div>
-        </section>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item active">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="users.html" class="nav-item">
+                    <span class="icon">👥</span>
+                    <span>Identities</span>
+                </a>
+                <a href="#" class="nav-item" onclick="logout()">
+                    <span class="icon">🚫</span>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
 
-        <section class="right-panel">
-            <div class="card card-log">
-                <div class="card-title">
-                    <span class="icon" style="background: #000;">💻</span>
-                    Verification Log
-                </div>
-                <div id="log-container"></div>
-                <button class="secondary btn-clear" onclick="clearLogs()">Clear Terminal</button>
-            </div>
-        </section>
-    </main>
+        <div class="main-content">
+            <header>
+                <h1>Security Control Hub</h1>
+                <p class="subtitle">Real-time status and lifecycle management</p>
+            </header>
+
+            <main class="dashboard-grid">
+                <section class="control-panel">
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="icon">🛡️</span>
+                            Security Hub
+                        </div>
+                        
+                        <div class="status-row">
+                            <div class="status-item">
+                                <label>Session</label>
+                                <span id="session-status" class="status-badge active">Verified</span>
+                            </div>
+                            <div class="status-item">
+                                <label>Provider</label>
+                                <span class="status-badge info">Enterprise Auth</span>
+                            </div>
+                        </div>
+
+                        <div class="action-section">
+                            <label>Identity Management</label>
+                            <div class="button-grid">
+                                <button class="secondary" onclick="fetchProfile()">
+                                    <span>👤</span> Profile
+                                </button>
+                                <button class="secondary" onclick="rotateToken()">
+                                    <span>🔄</span> Rotate
+                                </button>
+                                <button class="secondary btn-users" onclick="window.location.href='users.html'">
+                                    <span>👥</span> Users
+                                </button>
+                                <button class="secondary btn-revoke" onclick="logout()">
+                                    <span>🚫</span> Revoke
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="action-section">
+                            <label>Zero-Trust Verification</label>
+                            <button class="secondary btn-test" onclick="testInvalid()">
+                                <span>⚡</span> Execute Malicious Request Simulation
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card token-card" style="margin-top: 2rem;">
+                        <div class="card-title">
+                            <span class="icon">🔑</span>
+                            Token Registry
+                        </div>
+                        <div class="side-by-side-tokens">
+                            <div class="token-container">
+                                <div class="token-header">
+                                    <span>Access</span>
+                                    <div class="token-actions">
+                                        <button onclick="toggleToken('access')">👁️</button>
+                                        <button onclick="copyToken('access')">📋</button>
+                                    </div>
+                                </div>
+                                <div id="access-token-view" class="token-box truncated">Loading...</div>
+                            </div>
+
+                            <div class="token-container">
+                                <div class="token-header">
+                                    <span>Refresh</span>
+                                    <div class="token-actions">
+                                        <button onclick="toggleToken('refresh')">👁️</button>
+                                        <button onclick="copyToken('refresh')">📋</button>
+                                    </div>
+                                </div>
+                                <div id="refresh-token-view" class="token-box truncated">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="audit-panel">
+                    <div class="card card-log">
+                        <div class="card-title">
+                            <span class="icon">💻</span>
+                            Audit Log
+                        </div>
+                        <div id="log-container"></div>
+                        <div class="log-footer">
+                            <button class="secondary btn-clear" onclick="clearLogs()">Clear Console</button>
+                            <span class="system-status">Live Monitoring</span>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
 
     <script>
-        const API_URL = '';
+        const API_URL = window.location.origin;
         let accessToken = localStorage.getItem('access_token');
         let refreshToken = localStorage.getItem('refresh_token');
 
@@ -89,15 +154,24 @@
 
         function clearLogs() { document.getElementById('log-container').innerHTML = ''; }
 
-        async function fetchProfile() {
+        async function fetchProfile(isRetry = false) {
             log('Requesting protected profile data...', 'info');
             try {
                 const res = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
                 });
+
+                if (res.status === 401 && !isRetry) {
+                    log('Access Token expired. Attempting silent rotation...', 'warn');
+                    const success = await rotateToken(true);
+                    if (success) return fetchProfile(true);
+                }
+
                 const data = await res.json();
                 if (res.ok) {
                     log(`Profile Retrieved: ${JSON.stringify(data)}`, 'success');
+                    document.getElementById('session-status').innerText = 'Verified';
+                    document.getElementById('session-status').className = 'status-badge active';
                 } else if (res.status === 401) {
                     log('Access Token Expired or Revoked!', 'warn');
                     document.getElementById('session-status').innerText = 'Invalid';
@@ -108,8 +182,9 @@
             } catch (err) { log(`Network Error: ${err.message}`, 'error'); }
         }
 
-        async function rotateToken() {
-            log('Initiating Token Rotation Sequence...', 'info');
+        async function rotateToken(silent = false) {
+            if (!silent) log('Initiating Token Rotation Sequence...', 'info');
+            const refreshToken = localStorage.getItem('refresh_token');
             try {
                 const res = await fetch(`${API_URL}/auth/refresh`, {
                     method: 'POST',
@@ -118,16 +193,20 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    accessToken = data.access_token;
-                    refreshToken = data.refresh_token;
-                    localStorage.setItem('access_token', accessToken);
-                    localStorage.setItem('refresh_token', refreshToken);
-                    log('Rotation Success! New token pair generated.', 'success');
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                    if (!silent) log('Rotation Success! New token pair generated.', 'success');
                     updateTokenViews();
+                    return true;
                 } else {
-                    log(`Rotation Failed: ${data.detail}`, 'error');
+                    if (!silent) log(`Rotation Failed: ${data.detail}`, 'error');
+                    window.location.href = 'login.html';
+                    return false;
                 }
-            } catch (err) { log(`Network Error: ${err.message}`, 'error'); }
+            } catch (err) { 
+                if (!silent) log(`Network Error: ${err.message}`, 'error'); 
+                return false;
+            }
         }
 
         async function logout() {
@@ -152,13 +231,24 @@
             fetchProfile();
         }
 
+        function toggleToken(type) {
+            const el = document.getElementById(`${type}-token-view`);
+            el.classList.toggle('truncated');
+        }
+
+        function copyToken(type) {
+            const token = type === 'access' ? accessToken : refreshToken;
+            navigator.clipboard.writeText(token);
+            log(`${type.charAt(0).toUpperCase() + type.slice(1)} Token copied to clipboard!`, 'success');
+        }
+
         function updateTokenViews() {
-            document.getElementById('access-token-view').innerText = `Access Token: ${accessToken}`;
-            document.getElementById('refresh-token-view').innerText = `Refresh Token: ${refreshToken}`;
+            document.getElementById('access-token-view').innerText = localStorage.getItem('access_token');
+            document.getElementById('refresh-token-view').innerText = localStorage.getItem('refresh_token');
         }
 
         updateTokenViews();
-        log('Dashboard initialized. System secure.', 'success');
+        log('Security Control Hub Online. All systems nominal.', 'success');
     </script>
 </body>
 </html>

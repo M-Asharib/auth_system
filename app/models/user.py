@@ -13,4 +13,5 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+    access_token_expires_minutes = Column(Integer, nullable=True) # User-wise override
     created_at = Column(DateTime(timezone=True), server_default=func.now())

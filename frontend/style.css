@@ -61,13 +61,100 @@ h1 {
     margin: 0 auto;
 }
 
+/* --- App Shell Layout --- */
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.sidebar {
+    width: 280px;
+    background: rgba(18, 18, 18, 0.8);
+    backdrop-filter: blur(40px);
+    border-right: 1px solid var(--glass-border);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+}
+
+.nav-item.active {
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--primary);
+}
+
+.nav-item .icon {
+    font-size: 1.25rem;
+}
+
 main {
     flex: 1;
     max-width: 1300px;
-    margin: 0 auto;
+    margin: 0;
     padding: 3rem 2rem;
     width: 100%;
+    
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3rem;
 }
+
+@media (max-width: 1200px) {
+    .sidebar { width: 80px; padding: 2rem 1rem; }
+    .sidebar-logo span:not(.icon), .nav-item span:not(.icon) { display: none; }
+}
+
+@media (max-width: 1000px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 
 .auth-container {
     max-width: 450px;
@@ -256,19 +343,176 @@ button.secondary {
     gap: 1rem;
 }
 
-.token-display {
+.btn-revoke { color: var(--error); border-color: var(--error) !important; }
+.btn-users { color: var(--primary); border-color: var(--primary) !important; }
+.btn-test { color: var(--warning); border-color: var(--warning) !important; margin-top: 1rem; width: 100%; }
+
+.card-log {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-clear {
     margin-top: 1.5rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    font-family: 'Monaco', 'Consolas', monospace;
+    width: auto;
     font-size: 0.8rem;
-    color: var(--text-dim);
-    word-break: break-all;
+    align-self: flex-start;
+}
+
+/* --- Enhanced Dashboard Layout --- */
+
+.status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.status-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.25rem;
+    border-radius: 20px;
     border: 1px solid var(--glass-border);
 }
 
+.status-item label {
+    margin-left: 0;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.action-section {
+    margin-bottom: 2.5rem;
+}
+
+.action-section label {
+    margin-left: 0;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.button-grid button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.token-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+}
+
+.token-section label {
+    margin-left: 0;
+    margin-bottom: 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.side-by-side-tokens {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .side-by-side-tokens {
+        grid-template-columns: 1fr;
+    }
+}
+
+.token-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.token-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.token-header span {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+.token-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.token-actions button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.token-box {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.8rem;
+    color: var(--primary);
+    word-break: break-all;
+    line-height: 1.4;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.token-box.truncated {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-dim);
+}
+
+/* --- Audit Log Enhancements --- */
+
+.log-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+
+.system-status {
+    font-size: 0.75rem;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.system-status::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--success);
+}
+
+/* Utilities */
 .status-badge {
+    display: inline-block;
     padding: 0.4rem 1rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -280,16 +524,16 @@ button.secondary {
     color: var(--success);
 }
 
-.status-badge.inactive {
-    background: rgba(255, 59, 48, 0.15);
-    color: var(--error);
+.status-badge.info {
+    background: rgba(0, 122, 255, 0.15);
+    color: var(--primary);
 }
 
 #log-container {
     background: rgba(0, 0, 0, 0.4);
     border-radius: 16px;
-    padding: 1rem;
-    height: 400px;
+    padding: 1.25rem;
+    flex: 1;
     overflow-y: auto;
     font-family: 'Monaco', 'Consolas', monospace;
     font-size: 0.85rem;
@@ -297,13 +541,109 @@ button.secondary {
 }
 
 .log-entry {
-    margin-bottom: 0.5rem;
-    line-height: 1.4;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    padding-bottom: 0.4rem;
 }
 
-.log-time { color: var(--text-dim); margin-right: 0.5rem; }
-.log-type-info { color: var(--text); }
+.log-time { color: var(--text-dim); margin-right: 0.75rem; font-size: 0.75rem; }
 .log-type-success { color: var(--success); }
 .log-type-warn { color: var(--warning); }
 .log-type-error { color: var(--error); }
+
+/* Users Table & Management */
+.table-container {
+    margin-top: 2rem;
+    overflow-x: auto;
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+}
+
+th {
+    text-align: left;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.95rem;
+    color: var(--text);
+    vertical-align: middle;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr {
+    transition: background 0.2s ease;
+}
+
+tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    transition: all 0.2s;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.back-link:hover {
+    color: var(--primary);
+    background: rgba(0, 122, 255, 0.1);
+    transform: translateX(-5px);
+}
+
+/* Status variants */
+.status-badge.warning {
+    background: rgba(255, 149, 0, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(255, 149, 0, 0.2);
+}
+
+.status-badge.info {
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(0, 122, 255, 0.2);
+}
+
+.status-badge.active {
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(52, 199, 89, 0.2);
+}
+
+.status-badge.inactive {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--error);
+    border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+
 
