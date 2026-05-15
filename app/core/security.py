@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union, Optional
+import hashlib
 import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
@@ -19,7 +20,8 @@ def create_token(
     subject: Union[str, Any], 
     expires_delta: timedelta, 
     token_type: str,  # "access" or "refresh"
-    secret_key: str
+    secret_key: str,
+    fingerprint: Optional[str] = None
 ) -> str:
     """
     Create a JWT token with explicit structural attributes.
@@ -32,12 +34,17 @@ def create_token(
         "type": token_type,  # Explicit structural attribute
         "iat": datetime.now(timezone.utc)
     }
+    
+    if fingerprint:
+        # Hash fingerprint to keep it privacy-safe in JWT
+        to_encode["fpt"] = hashlib.sha256(fingerprint.encode()).hexdigest()
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 def create_access_token(
     subject: Union[str, Any], 
-    expires_delta: Optional[timedelta] = None
+    expires_delta: Optional[timedelta] = None,
+    fingerprint: Optional[str] = None
 ) -> str:
     """Generate a short-lived access token with optional custom expiry."""
     if expires_delta:
@@ -49,15 +56,20 @@ def create_access_token(
         subject=subject,
         expires_delta=expires,
         token_type="access",
-        secret_key=settings.SECRET_KEY_ACCESS
+        secret_key=settings.SECRET_KEY_ACCESS,
+        fingerprint=fingerprint
     )
 
-def create_refresh_token(subject: Union[str, Any]) -> str:
+def create_refresh_token(
+    subject: Union[str, Any],
+    fingerprint: Optional[str] = None
+) -> str:
     """Generate a long-lived refresh token."""
     expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     return create_token(
         subject=subject,
         expires_delta=expires,
         token_type="refresh",
-        secret_key=settings.SECRET_KEY_REFRESH
+        secret_key=settings.SECRET_KEY_REFRESH,
+        fingerprint=fingerprint
     )

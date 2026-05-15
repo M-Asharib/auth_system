@@ -13,3 +13,4 @@ class TokenExchangeResponse(BaseModel):
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
     type: Optional[str] = None
+    fpt: Optional[str] = None # Device Fingerprint Hash

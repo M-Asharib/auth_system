@@ -132,6 +132,7 @@
         </div>
     </div>
 
+    <script src="fingerprint.js"></script>
     <script>
         const API_URL = window.location.origin;
 
@@ -150,88 +151,93 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        function clearLogs() { document.getElementById('log-container').innerHTML = ''; }
-
-        async function fetchProfile(isRetry = false) {
-            log('Requesting protected profile data...', 'info');
+        async function fetchProfile() {
             try {
-                const res = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-                });
-
-                if (res.status === 401 && !isRetry) {
-                    log('Access Token expired. Attempting silent rotation...', 'warn');
-                    const success = await rotateToken(true);
-                    if (success) return fetchProfile(true);
-                }
-
+                const res = await secureFetch(`${API_URL}/users/me`);
                 const data = await res.json();
                 if (res.ok) {
-                    log(`Profile Retrieved: ${JSON.stringify(data)}`, 'success');
-                    document.getElementById('session-status').innerText = 'Verified';
-                    document.getElementById('session-status').className = 'status-badge active';
-                } else if (res.status === 401) {
-                    log('Access Token Expired or Revoked!', 'warn');
-                    document.getElementById('session-status').innerText = 'Invalid';
-                    document.getElementById('session-status').className = 'status-badge inactive';
+                    log(`Identity Verified: ${data.email}`, 'success');
                 } else {
-                    log(`Error: ${data.detail}`, 'error');
+                    log(`Auth Failure: ${data.detail}`, 'error');
+                    if (res.status === 401) {
+                        localStorage.removeItem('access_token');
+                        setTimeout(() => window.location.href = 'login.html', 2000);
+                    }
                 }
-            } catch (err) { log(`Network Error: ${err.message}`, 'error'); }
+            } catch (err) {
+                log(`Network Error: ${err.message}`, 'error');
+            }
         }
 
-        async function rotateToken(silent = false) {
-            if (!silent) log('Initiating Token Rotation Sequence...', 'info');
+        async function rotateToken() {
             const refreshToken = localStorage.getItem('refresh_token');
             try {
-                const res = await fetch(`${API_URL}/auth/refresh`, {
+                const res = await secureFetch(`${API_URL}/auth/refresh`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refresh_token: refreshToken })
+                    body: JSON.stringify({ refresh_token: refreshToken }),
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 const data = await res.json();
                 if (res.ok) {
                     localStorage.setItem('access_token', data.access_token);
                     localStorage.setItem('refresh_token', data.refresh_token);
-                    if (!silent) log('Rotation Success! New token pair generated.', 'success');
-                    updateTokenViews();
-                    return true;
+                    log('Tokens Rotated Successfully', 'success');
+                    displayTokens();
                 } else {
-                    if (!silent) log(`Rotation Failed: ${data.detail}`, 'error');
-                    window.location.href = 'login.html';
-                    return false;
+                    log(`Rotation Failed: ${data.detail}`, 'error');
                 }
-            } catch (err) { 
-                if (!silent) log(`Network Error: ${err.message}`, 'error'); 
-                return false;
+            } catch (err) {
+                log(`Network Error: ${err.message}`, 'error');
             }
         }
 
         async function logout() {
-            log('Initiating Stateful Revocation...', 'info');
             try {
-                const res = await fetch(`${API_URL}/auth/logout`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-                });
-                const data = await res.json();
+                const res = await secureFetch(`${API_URL}/auth/logout`, { method: 'POST' });
                 if (res.ok) {
-                    log(`Logout Complete: ${data.detail}`, 'success');
-                    log('Access Token blacklisted in Redis.', 'warn');
-                    document.getElementById('session-status').innerText = 'Revoked';
-                    document.getElementById('session-status').className = 'status-badge inactive';
-                    
-                    // Clear local storage
+                    log('Session Revoked Successfully', 'warn');
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    setTimeout(() => window.location.href = 'login.html', 1500);
-                } else { log(`Logout Error: ${data.detail}`, 'error'); }
-            } catch (err) { log(`Network Error: ${err.message}`, 'error'); }
+                    setTimeout(() => window.location.href = 'login.html', 1000);
+                }
+            } catch (err) {
+                log(`Logout Error: ${err.message}`, 'error');
+            }
         }
 
-        function testInvalid() {
-            log('Testing Zero-Trust: Attempting access with Revoked Token...', 'warn');
-            fetchProfile();
+        async function testInvalid() {
+            log('Simulating Malicious Request...', 'warn');
+            // Simulate identity drift by manually modifying the fingerprint header
+            const fingerprint = getDeviceFingerprint();
+            const token = localStorage.getItem('access_token');
+            
+            try {
+                const res = await fetch(`${API_URL}/users/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-Device-Fingerprint': 'FAKE_STOLEN_FINGERPRINT'
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    log(`ZERO-TRUST SUCCESS: ${data.detail}`, 'success');
+                    log(`ACTION: Token has been auto-blacklisted.`, 'error');
+                    // Check if we are now blocked
+                    const checkRes = await secureFetch(`${API_URL}/users/me`);
+                    if (checkRes.status === 401) {
+                        log('CONFIRMED: Access Permanently Denied for this token.', 'error');
+                    }
+                }
+            } catch (err) {
+                log(`Simulation Error: ${err.message}`, 'error');
+            }
+        }
+
+        function displayTokens() {
+            const access = localStorage.getItem('access_token');
+            const refresh = localStorage.getItem('refresh_token');
+            document.getElementById('access-token-view').innerText = access || 'None';
+            document.getElementById('refresh-token-view').innerText = refresh || 'None';
         }
 
         function toggleToken(type) {
@@ -242,16 +248,28 @@
         function copyToken(type) {
             const token = localStorage.getItem(`${type}_token`);
             navigator.clipboard.writeText(token);
-            log(`${type.charAt(0).toUpperCase() + type.slice(1)} Token copied to clipboard!`, 'success');
+            log(`${type.charAt(0).toUpperCase() + type.slice(1)} Token Copied to Clipboard`, 'info');
         }
 
-        function updateTokenViews() {
-            document.getElementById('access-token-view').innerText = localStorage.getItem('access_token');
-            document.getElementById('refresh-token-view').innerText = localStorage.getItem('refresh_token');
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
         }
 
-        updateTokenViews();
-        log('Security Control Hub Online. All systems nominal.', 'success');
+        // Initial setup
+        displayTokens();
+        fetchProfile();
+
+        // Silent Refresh Logic
+        setInterval(async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp * 1000;
+            if (exp - Date.now() < 60000) { // 1 min before expiry
+                log('Initiating Silent Healing...', 'warn');
+                await rotateToken();
+            }
+        }, 30000);
     </script>
 </body>
 </html>

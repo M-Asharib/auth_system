@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Header
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import jwt
+from typing import Any, Optional
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRegistrationResponse
@@ -43,7 +44,8 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=TokenExchangeResponse)
 async def login(
     db: AsyncSession = Depends(get_db), 
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    x_device_fingerprint: Optional[str] = Header(None)
 ):
     # Authenticate user
     result = await db.execute(select(User).where(User.email == form_data.username))
@@ -67,20 +69,28 @@ async def login(
         from datetime import timedelta
         expires_delta = timedelta(minutes=user.access_token_expires_minutes)
 
-    # Update last login time
+    # Update last login
     user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
-
+    
     return {
-        "access_token": create_access_token(user.id, expires_delta=expires_delta),
-        "refresh_token": create_refresh_token(user.id),
+        "access_token": create_access_token(
+            user.id, 
+            expires_delta=expires_delta,
+            fingerprint=x_device_fingerprint
+        ),
+        "refresh_token": create_refresh_token(
+            user.id,
+            fingerprint=x_device_fingerprint
+        ),
         "token_type": "bearer",
     }
 
 @router.post("/refresh", response_model=TokenExchangeResponse)
 async def refresh_token(
     refresh_token: str = Body(..., embed=True),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    x_device_fingerprint: Optional[str] = Header(None)
 ):
     """
     Rotate tokens using a valid refresh token.
@@ -112,8 +122,15 @@ async def refresh_token(
         expires_delta = timedelta(minutes=user.access_token_expires_minutes)
 
     return {
-        "access_token": create_access_token(user.id, expires_delta=expires_delta),
-        "refresh_token": create_refresh_token(user.id),
+        "access_token": create_access_token(
+            user.id, 
+            expires_delta=expires_delta,
+            fingerprint=x_device_fingerprint
+        ),
+        "refresh_token": create_refresh_token(
+            user.id,
+            fingerprint=x_device_fingerprint
+        ),
         "token_type": "bearer",
     }
 
