@@ -180,6 +180,10 @@
                     localStorage.setItem('access_token', data.access_token);
                     localStorage.setItem('refresh_token', data.refresh_token);
                     if (!silent) alert('Tokens rotated successfully! Session extended.');
+                    
+                    // Restart the timer logic
+                    updateCountdown();
+                    
                     return true;
                 } else {
                     if (!silent) alert(`Rotation Failed: ${data.detail}`);
@@ -317,20 +321,20 @@
         }
 
         function updateCountdown() {
-            const token = localStorage.getItem('access_token');
+            if (window.sessionTimerInterval) clearInterval(window.sessionTimerInterval);
             const countdownEl = document.getElementById('session-expiry-timer');
-            if (!token) return;
+            
+            window.sessionTimerInterval = setInterval(() => {
+                const token = localStorage.getItem('access_token');
+                if (!token) return;
 
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const expiry = payload.exp * 1000;
-                
-                const timer = setInterval(() => {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const expiry = payload.exp * 1000;
                     const now = new Date().getTime();
                     const distance = expiry - now;
                     
                     if (distance < 0) {
-                        clearInterval(timer);
                         countdownEl.innerText = 'Refreshing...';
                         return;
                     }
@@ -340,16 +344,15 @@
                     
                     countdownEl.innerText = `${minutes}m ${seconds}s`;
                     
-                    // Visual warning if under 1 minute
                     if (minutes < 1) {
                         countdownEl.parentElement.className = 'status-badge warning';
                     } else {
                         countdownEl.parentElement.className = 'status-badge info';
                     }
-                }, 1000);
-            } catch (e) {
-                console.error('Failed to decode token for countdown');
-            }
+                } catch (e) {
+                    console.error('Countdown error:', e);
+                }
+            }, 1000);
         }
 
         fetchUsers();
