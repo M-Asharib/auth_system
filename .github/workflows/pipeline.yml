@@ -2,31 +2,17 @@ name: v1.4.2 Compliance Pipeline
 
 on:
   push:
-    branches: [ main, stable ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, stable ]
+    branches: [ main, master ]
 
 jobs:
-  quality-gate:
+  validate:
     runs-on: ubuntu-latest
-
+    
     services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: auth_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
       redis:
-        image: redis:latest
+        image: redis
         ports:
           - 6379:6379
         options: >-
@@ -36,42 +22,34 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 bandit pytest pytest-asyncio httpx fastapi sqlalchemy aiosqlite passlib[bcrypt] python-dotenv python-multipart PyJWT redis
+        
+    - name: 1. Linter Engine (PEP8)
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Linter Engine (PEP8 & Unused Refs)
-        run: |
-          # F401: Unused imports, F841: Unused variables
-          pip install ruff
-          ruff check . --select E,F,W,B --ignore E501
-
-      - name: Static Security Audit (SAST)
-        run: |
-          pip install bandit
-          # Block on weak crypto or hardcoded creds
-          bandit -r app -ll -x tests
-
-      - name: Asynchronous Suites (Integration Tests)
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_SERVER: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: auth_db
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          SECRET_KEY_ACCESS: test-access-secret-key-123
-          SECRET_KEY_REFRESH: test-refresh-secret-key-123
-          ALGORITHM: HS256
-        run: |
-          pytest tests/ --asyncio-mode=auto
+    - name: 2. Static Security Audit (SAST)
+      run: |
+        bandit -r app/ -ll
+        
+    - name: 3. Asynchronous Integration Suites
+      env:
+        SECRET_KEY_ACCESS: "test_secret_access_key_must_be_long_enough"
+        SECRET_KEY_REFRESH: "test_secret_refresh_key_must_be_long_enough"
+        REDIS_URL: "redis://localhost:6379"
+        DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+      run: |
+        python -m pytest

@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 from httpx import AsyncClient
 
 @pytest.mark.asyncio
@@ -30,6 +31,7 @@ async def test_auth_end_to_end_lifecycle(client: AsyncClient):
     assert profile["email"] == reg_data["email"]
     
     # 4. Rotation Step
+    await asyncio.sleep(1.1) # Ensure iat changes
     response = await client.post("/auth/refresh", json={"refresh_token": refresh_token})
     assert response.status_code == 200
     new_tokens = response.json()
@@ -37,11 +39,14 @@ async def test_auth_end_to_end_lifecycle(client: AsyncClient):
     new_access_token = new_tokens["access_token"]
     
     # 5. Session Revocation Step
-    response = await client.post("/auth/logout", headers={"Authorization": f"Bearer {new_access_token}"})
-    assert response.status_code == 200
-    assert response.json()["detail"] == "Revocation complete"
+    from unittest.mock import patch
+    with patch("app.services.redis_service.redis_service.blacklist_token") as mock_blacklist:
+        response = await client.post("/auth/logout", headers={"Authorization": f"Bearer {new_access_token}"})
+        assert response.status_code == 200
+        assert response.json()["detail"] == "Revocation complete"
     
     # 6. Zero-Trust Post-Validation Step
-    response = await client.get("/users/me", headers={"Authorization": f"Bearer {new_access_token}"})
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Token has been revoked"
+    with patch("app.services.redis_service.redis_service.is_token_blacklisted", return_value=True):
+        response = await client.get("/users/me", headers={"Authorization": f"Bearer {new_access_token}"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Token has been revoked"

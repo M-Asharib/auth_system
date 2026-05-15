@@ -37,14 +37,21 @@ async def get_current_user(
         if await redis_service.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token revoked",
+                detail="Token has been revoked",
             )
 
-    except Exception as e:
-        print(f"DEBUG: Token validation failed: {e}")
+    except HTTPException:
+        raise
+    except (jwt.PyJWTError, ValidationError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {str(e)}",
+            detail="Could not validate credentials",
+        )
+    except Exception as e:
+        print(f"DEBUG: Unexpected error during token validation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Internal authentication error",
         )
     
     print(f"DEBUG: Fetching user {token_data.sub} from DB...")
