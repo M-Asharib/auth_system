@@ -43,7 +43,7 @@ jobs:
 
     - name: 2. Static Security Audit (SAST)
       run: |
-        bandit -r app/ -ll -v
+        bandit -r app/ -ll
         
     - name: 3. Asynchronous Integration Suites
       env:
@@ -52,4 +52,4 @@ jobs:
         REDIS_URL: "redis://localhost:6379"
         DATABASE_URL: "sqlite+aiosqlite:///./test.db"
       run: |
-        python -m pytest -vv
+        python -m pytest
