@@ -48,7 +48,9 @@ class RedisService:
             print(f"Redis Warning: Could not check blacklist (is Redis running?): {e}")
             return False
 
+
 redis_service = RedisService()
+
 
 async def get_redis():
     """Dependency to get Redis client."""

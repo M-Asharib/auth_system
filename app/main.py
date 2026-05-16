@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.api import auth, users
 from app.services.redis_service import redis_service
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Sync Database Schema (Development Mode)
@@ -41,6 +42,7 @@ app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
+
 
 @app.get("/")
 async def root():

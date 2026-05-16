@@ -4,8 +4,10 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: EmailStr
 
+
 class UserPolicyUpdate(BaseModel):
     expires_minutes: int = Field(..., gt=0, lt=10080)
+
 
 class SystemStatsResponse(BaseModel):
     total_users: int
@@ -16,15 +18,15 @@ class SystemStatsResponse(BaseModel):
     avg_session_policy: float
     revocation_pulse: int
 
+
 class UserCreate(UserBase):
     password: str
+
 
 class UserRegistrationResponse(UserBase):
     id: int
     is_active: bool = True
     is_superuser: bool = False
-    access_token_expires_minutes: int | None = None
-    last_login_at: datetime | None = None
     created_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

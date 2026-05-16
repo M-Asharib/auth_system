@@ -19,6 +19,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     """
     return current_user
 
+
 @router.get("/", response_model=List[UserRegistrationResponse])
 async def read_users(
     db: AsyncSession = Depends(get_db),
@@ -36,6 +37,8 @@ async def read_users(
     except Exception as e:
         print(f"DEBUG: Error fetching users from DB: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.patch("/{user_id}/policy", response_model=UserRegistrationResponse)
 async def update_user_policy(
     user_id: int,
@@ -59,6 +62,7 @@ async def update_user_policy(
     await db.refresh(user)
     return user
 
+
 @router.post("/policy/bulk", response_model=StandardActionResponse)
 async def bulk_update_user_policy(
     expires_minutes: int = Body(..., embed=True),
@@ -77,6 +81,7 @@ async def bulk_update_user_policy(
     )
     await db.commit()
     return {"detail": f"Global policy enforced: {expires_minutes}m for all accounts."}
+
 
 @router.get("/stats", response_model=SystemStatsResponse)
 async def get_system_stats(

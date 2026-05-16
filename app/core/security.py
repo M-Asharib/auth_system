@@ -16,9 +16,10 @@ def get_password_hash(password: str) -> str:
     """Generate a bcrypt hash of a password."""
     return pwd_context.hash(password)
 
+
 def create_token(
-    subject: Union[str, Any], 
-    expires_delta: timedelta, 
+    subject: Union[str, Any],
+    expires_delta: timedelta,
     token_type: str,  # "access" or "refresh"
     secret_key: str,
     fingerprint: Optional[str] = None
@@ -29,20 +30,21 @@ def create_token(
     """
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode = {
-        "exp": expire, 
+        "exp": expire,
         "sub": str(subject),
         "type": token_type,  # Explicit structural attribute
         "iat": datetime.now(timezone.utc)
     }
-    
+
     if fingerprint:
         # Hash fingerprint to keep it privacy-safe in JWT
         to_encode["fpt"] = hashlib.sha256(fingerprint.encode()).hexdigest()
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+
 def create_access_token(
-    subject: Union[str, Any], 
+    subject: Union[str, Any],
     expires_delta: Optional[timedelta] = None,
     fingerprint: Optional[str] = None
 ) -> str:
@@ -56,9 +58,10 @@ def create_access_token(
         subject=subject,
         expires_delta=expires,
         token_type="access",
-        secret_key=settings.SECRET_KEY_ACCESS,
+        secret_key=settings.SECRET_KEY_ACCESS,  # nosec B106
         fingerprint=fingerprint
     )
+
 
 def create_refresh_token(
     subject: Union[str, Any],
@@ -70,6 +73,6 @@ def create_refresh_token(
         subject=subject,
         expires_delta=expires,
         token_type="refresh",
-        secret_key=settings.SECRET_KEY_REFRESH,
+        secret_key=settings.SECRET_KEY_REFRESH,  # nosec B106
         fingerprint=fingerprint
     )

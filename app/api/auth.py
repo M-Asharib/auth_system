@@ -41,6 +41,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(db_obj)
     return db_obj
 
+
 @router.post("/login", response_model=TokenExchangeResponse)
 async def login(
     db: AsyncSession = Depends(get_db), 
@@ -86,6 +87,7 @@ async def login(
         "token_type": "bearer",
     }
 
+
 @router.post("/refresh", response_model=TokenExchangeResponse)
 async def refresh_token(
     refresh_token: str = Body(..., embed=True),
@@ -104,6 +106,13 @@ async def refresh_token(
             raise HTTPException(status_code=401, detail="Invalid token type")
     except (jwt.PyJWTError, ValidationError):
         raise HTTPException(status_code=401, detail="Could not validate refresh token")
+    
+    # v1.4.2: Check if refresh token is blacklisted
+    if await redis_service.is_token_blacklisted(refresh_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked",
+        )
     
     result = await db.execute(select(User).where(User.id == int(token_data.sub)))
     user = result.scalars().first()
@@ -134,14 +143,17 @@ async def refresh_token(
         "token_type": "bearer",
     }
 
+
 @router.post("/logout", response_model=StandardActionResponse)
 async def logout(
     current_user: User = Depends(get_current_user),
-    token: str = Depends(reusable_oauth2)
+    token: str = Depends(reusable_oauth2),
+    refresh_token: Optional[str] = Body(None, embed=True)
 ):
     """
-    Revoke the current access token using Redis blacklisting.
+    Revoke the current access token and optionally the refresh token.
     """
+    # 1. Blacklist Access Token
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY_ACCESS, algorithms=[settings.ALGORITHM]
@@ -149,12 +161,84 @@ async def logout(
         exp = payload.get("exp")
         now = datetime.now(timezone.utc).timestamp()
         ttl = int(exp - now)
-        
         if ttl > 0:
             await redis_service.blacklist_token(token, ttl)
-            
     except jwt.PyJWTError:
-        pass # Token already invalid
-        
+        pass
+
+    # 2. Blacklist Refresh Token (if provided)
+    if refresh_token:
+        try:
+            payload = jwt.decode(
+                refresh_token, settings.SECRET_KEY_REFRESH, algorithms=[settings.ALGORITHM]
+            )
+            exp = payload.get("exp")
+            now = datetime.now(timezone.utc).timestamp()
+            ttl = int(exp - now)
+            if ttl > 0:
+                await redis_service.blacklist_token(refresh_token, ttl)
+        except jwt.PyJWTError:
+            pass
+            
     return {"detail": "Revocation complete"}
+
+
+@router.post("/revoke", response_model=StandardActionResponse)
+async def revoke_token(
+    token: str = Body(..., embed=True)
+):
+    """
+    Standalone endpoint to revoke any valid token (Access or Refresh).
+    """
+    # Try Access Token first
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY_ACCESS, algorithms=[settings.ALGORITHM]
+        )
+        exp = payload.get("exp")
+        now = datetime.now(timezone.utc).timestamp()
+        ttl = int(exp - now)
+        if ttl > 0:
+            await redis_service.blacklist_token(token, ttl)
+        return {"detail": "Access token revoked"}
+    except jwt.PyJWTError:
+        pass
+
+    # Try Refresh Token
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY_REFRESH, algorithms=[settings.ALGORITHM]
+        )
+        exp = payload.get("exp")
+        now = datetime.now(timezone.utc).timestamp()
+        ttl = int(exp - now)
+        if ttl > 0:
+            await redis_service.blacklist_token(token, ttl)
+        return {"detail": "Refresh token revoked"}
+    except jwt.PyJWTError:
+        pass
+
+    raise HTTPException(status_code=400, detail="Invalid or already expired token")
+
+
+@router.get("/blacklist", response_model=Any)
+async def get_blacklist_items(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    List all blacklisted tokens and their TTL. (Admin Only)
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    if not redis_service.redis_client:
+        return {"detail": "Redis is not connected", "items": []}
+
+    keys = await redis_service.redis_client.keys("blacklist:*")
+    items = []
+    for key in keys:
+        ttl = await redis_service.redis_client.ttl(key)
+        items.append({"key": key, "ttl": ttl})
+
+    return {"total": len(items), "items": items}
 
