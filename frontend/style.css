@@ -139,7 +139,7 @@ main {
     width: 100%;
     
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 3rem;
 }
 
@@ -419,14 +419,14 @@ button.secondary {
 }
 
 .side-by-side-tokens {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 1rem;
+    min-width: 0;
 }
 
 @media (max-width: 768px) {
     .side-by-side-tokens {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 }
 
@@ -435,6 +435,8 @@ button.secondary {
     border-radius: 16px;
     padding: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    flex: 1;
+    min-width: 0; /* Prevents token blowout */
 }
 
 .token-header {

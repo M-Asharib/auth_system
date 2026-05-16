@@ -26,7 +26,7 @@
                     <span class="icon">👥</span>
                     <span>Identities</span>
                 </a>
-                <a href="#" class="nav-item" onclick="logout()">
+                <a href="#" class="nav-item" onclick="logout()" style="margin-top: auto; border-top: 1px solid var(--glass-border); padding-top: 2rem;">
                     <span class="icon">🚫</span>
                     <span>Logout</span>
                 </a>
@@ -41,50 +41,62 @@
 
             <main class="dashboard-grid">
                 <section class="control-panel">
-                    <div class="card">
+                    <!-- Status Pulse -->
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <label>Identity Status</label>
+                            <div id="user-status-badge" class="status-badge active">Verified</div>
+                        </div>
+                        <div class="status-item">
+                            <label>Redis Cache</label>
+                            <div id="redis-status-badge" class="status-badge info">Active</div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Card -->
+                    <div class="card" style="margin-bottom: 2rem;">
                         <div class="card-title">
-                            <span class="icon">🛡️</span>
-                            Security Hub
+                            <span class="icon">👤</span>
+                            Active Profile
                         </div>
-                        
-                        <div class="status-row">
-                            <div class="status-item">
-                                <label>Session</label>
-                                <span id="session-status" class="status-badge active">Verified</span>
-                            </div>
-                            <div class="status-item">
-                                <label>Provider</label>
-                                <span class="status-badge info">Enterprise Auth</span>
-                            </div>
+                        <div id="profile-display" style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1.25rem; font-weight: 600;" id="user-email">Loading...</div>
+                            <div style="color: var(--text-dim); font-size: 0.9rem;" id="user-role">Account Holder</div>
                         </div>
-
-                        <div class="action-section">
-                            <label>Identity Management</label>
-                            <div class="button-grid">
-                                <button class="secondary" onclick="fetchProfile()">
-                                    <span>👤</span> Profile
-                                </button>
-                                <button class="secondary" onclick="rotateToken()">
-                                    <span>🔄</span> Rotate
-                                </button>
-                                <button class="secondary btn-users" onclick="window.location.href='users.html'">
-                                    <span>👥</span> Users
-                                </button>
-                                <button class="secondary btn-revoke" onclick="logout()">
-                                    <span>🚫</span> Revoke
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="action-section">
-                            <label>Zero-Trust Verification</label>
-                            <button class="secondary btn-test" onclick="testInvalid()">
-                                <span>⚡</span> Execute Malicious Request Simulation
+                        <div class="button-grid">
+                            <button class="secondary" onclick="rotateToken()">
+                                <span>🔄</span> Rotate
+                            </button>
+                            <button class="secondary btn-revoke" onclick="logout()">
+                                <span>🚫</span> Revoke
                             </button>
                         </div>
                     </div>
 
-                    <div class="card token-card" style="margin-top: 2rem;">
+                    <!-- System Pulse -->
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <div class="card-title">
+                            <span class="icon">📈</span>
+                            System Pulse
+                        </div>
+                        <div class="status-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 0;">
+                            <div class="status-item" style="text-align: center;">
+                                <label>Total Users</label>
+                                <div id="stat-users" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                            </div>
+                            <div class="status-item" style="text-align: center;">
+                                <label>Admins</label>
+                                <div id="stat-admins" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                            </div>
+                            <div class="status-item" style="text-align: center;">
+                                <label>Revocations</label>
+                                <div id="stat-revoked" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Token Management -->
+                    <div class="card token-card">
                         <div class="card-title">
                             <span class="icon">🔑</span>
                             Token Registry
@@ -112,6 +124,9 @@
                                 <div id="refresh-token-view" class="token-box truncated">Loading...</div>
                             </div>
                         </div>
+                        <button class="secondary btn-test" style="margin-top: 1.5rem;" onclick="testInvalid()">
+                            <span>⚡</span> Execute Zero-Trust Attack Simulation
+                        </button>
                     </div>
                 </section>
 
@@ -124,7 +139,7 @@
                         <div id="log-container"></div>
                         <div class="log-footer">
                             <button class="secondary btn-clear" onclick="clearLogs()">Clear Console</button>
-                            <span class="system-status">Live Monitoring</span>
+                            <div class="system-status">Monitoring Engine v1.4.2</div>
                         </div>
                     </div>
                 </section>
@@ -157,6 +172,13 @@
                 const data = await res.json();
                 if (res.ok) {
                     log(`Identity Verified: ${data.email}`, 'success');
+                    document.getElementById('user-email').innerText = data.email;
+                    if (data.is_superuser) {
+                        document.getElementById('user-role').innerText = 'System Administrator';
+                        document.getElementById('user-role').style.color = 'var(--primary)';
+                    }
+                    // Fetch Stats too
+                    fetchStats();
                 } else {
                     log(`Auth Failure: ${data.detail}`, 'error');
                     if (res.status === 401) {
@@ -166,6 +188,30 @@
                 }
             } catch (err) {
                 log(`Network Error: ${err.message}`, 'error');
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await secureFetch(`${API_URL}/users/stats`);
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('stat-users').innerText = data.total_users;
+                    document.getElementById('stat-admins').innerText = data.admin_count;
+                    document.getElementById('stat-revoked').innerText = data.revocation_pulse;
+                    
+                    // Update Redis status
+                    const redisBadge = document.getElementById('redis-status-badge');
+                    if (data.revocation_pulse !== undefined) {
+                        redisBadge.innerText = 'Active';
+                        redisBadge.className = 'status-badge active';
+                    } else {
+                        redisBadge.innerText = 'Failsafe';
+                        redisBadge.className = 'status-badge warning';
+                    }
+                }
+            } catch (err) {
+                console.error('Stats fetch failed', err);
             }
         }
 
