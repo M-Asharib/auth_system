@@ -119,3 +119,5 @@ pytest tests/ --asyncio-mode=auto
 
 ## 📄 License
 Confidential // Project Core-Auth Spec v1.4.2
+<!-- python -m uvicorn app.main:app --reload -->
+
