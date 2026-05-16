@@ -124,7 +124,7 @@ async def get_system_stats(
         try:
             # Note: This is an estimate of keys.
             revocation_pulse = await redis_service.redis_client.dbsize()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     return {

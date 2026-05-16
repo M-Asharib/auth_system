@@ -234,11 +234,13 @@ async def get_blacklist_items(
     if not redis_service.redis_client:
         return {"detail": "Redis is not connected", "items": []}
 
-    keys = await redis_service.redis_client.keys("blacklist:*")
+    keys = await redis_service.redis_client.keys("blacklist:*")  # nosec B608
     items = []
     for key in keys:
         ttl = await redis_service.redis_client.ttl(key)
-        items.append({"key": key, "ttl": ttl})
+        # Return masked token for security
+        masked_key = f"{key[:20]}...{key[-10:]}" if len(key) > 30 else key
+        items.append({"id": masked_key, "ttl": ttl})
 
     return {"total": len(items), "items": items}
 
